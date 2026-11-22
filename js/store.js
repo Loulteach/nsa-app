@@ -41,7 +41,7 @@ async function flush(){
           body:JSON.stringify(Object.assign({id:it.id},r))});
         if(!res.ok && res.status!==409) throw new Error('resultat '+res.status);
         await tx('outbox','readwrite',s=>s.delete(it.id));
-      }catch(e){ console.warn('envoi reporté',e); break; }
+      }catch(e){ console.warn('envoi reporté',e); if(!navigator.onLine) break; }
     }
   } finally { flushing=false; document.dispatchEvent(new Event('nsa-sync')); }
 }

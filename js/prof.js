@@ -156,7 +156,7 @@ async function save(k,blob){
 /* ---------- commun ---------- */
 const tabs=()=>`<div class="bar" style="justify-content:space-between"><h1>Espace formatrice</h1><button class="btn ghost small" id="out" style="width:auto">Déconnexion</button></div>
   <div class="tabs"><button id="t-res" aria-pressed="${ST.tab==='res'}">Résultats</button><button id="t-voix" aria-pressed="${ST.tab==='voix'}">Ma voix</button></div>`;
-const weekSelect=()=>`<select class="plain" id="wk" aria-label="Semaine">${ST.weeks.map(w=>`<option value="${w.n}" ${w.n===ST.week?'selected':''}>Semaine ${w.n} · ${esc(w.titre)}</option>`).join('')}</select>`;
+const weekSelect=()=>`<select class="plain" id="wk" aria-label="Semaine">${ST.weeks.map(w=>`<option value="${w.n}" ${w.n===ST.week?'selected':''}>Semaine ${w.n} · ${esc(w.titre)}${w.cachee?' (pas encore envoyée)':''}</option>`).join('')}</select>`;
 function bindTop(){
   const o=$('#out'); if(o) o.onclick=()=>{ sess=null; S.ls('session',null); render(); };
   const a=$('#t-res'), b=$('#t-voix'); if(a) a.onclick=()=>{ ST.tab='res'; ST.detail=null; render(); }; if(b) b.onclick=()=>{ ST.tab='voix'; render(); };
@@ -165,7 +165,7 @@ function bindTop(){
 async function loadWeekData(){ const r=await fetch(`weeks/semaine-${ST.week}.json`,{cache:'no-store'}); ST.weekData=await r.json(); }
 function render(){ if(!sess||!S.online()) return vLogin(); if(ST.tab==='voix') vVoix(); else vRes(); }
 (async function boot(){
-  try{ ST.weeks=(await (await fetch('weeks/index.json',{cache:'no-store'})).json()).semaines; ST.week=ST.weeks[ST.weeks.length-1].n; await loadWeekData(); }catch(e){}
+  try{ ST.weeks=(await (await fetch('weeks/index.json',{cache:'no-store'})).json()).semaines; const vis=ST.weeks.filter(w=>!w.cachee); ST.week=(vis[vis.length-1]||ST.weeks[0]).n; await loadWeekData(); }catch(e){}
   render();
 })();
 })();
