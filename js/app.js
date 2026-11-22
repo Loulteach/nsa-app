@@ -32,7 +32,7 @@ const prog=(n,i)=>`<div class="prog">${Array.from({length:n},(_,k)=>`<i class="$
 function stars(score,total){const n=total?Math.round(score/total*3):0;return `<span class="stars" aria-label="${n} étoiles sur 3">${[0,1,2].map(k=>`<span class="${k<n?'on':''}">${ico.star}</span>`).join('')}</span>`;}
 const model=t=>t?`<div class="model"><b>Exemple :</b> ${esc(t)}</div>`:'';
 const fbOk=t=>{ $('#fb').innerHTML=`<div class="fb ok">${ico.check} ${esc(t)}</div>`; };
-function fbKo(t){ const f=$('#fb'); f.innerHTML=`<div class="fb ko" title="Toucher pour réécouter">${esc(t)}</div>`; A.speakFR(t); f.firstChild.onclick=()=>A.speakFR(t); }
+function fbKo(t){ const parts=Array.isArray(t)?t:[t], txt=parts.join(' '); const f=$('#fb'); f.innerHTML=`<div class="fb ko" title="Toucher pour réécouter">${esc(txt)}</div>`; A.say(parts); f.firstChild.onclick=()=>A.say(parts); }
 
 /* ---------- résultats ---------- */
 function judge(ok,q,given){ ST.tmp.total++; if(ok) ST.tmp.score++; ST.tmp.answers.push({q,given:String(given),ok}); }
@@ -56,7 +56,7 @@ function vLogin(){
      <input id="in-name" autocomplete="given-name" autocapitalize="words" value="${esc(ST.prenom)}"></div></div>
    <button class="btn" id="go" aria-label="Commencer">${ico.next}</button>`;
   const go=()=>{ const v=$('#in-name').value.trim(); if(!v){ fbKoLogin(); return; } ST.prenom=cap(v.split(/\s+/)[0]); S.ls('prenom',ST.prenom); route(); };
-  function fbKoLogin(){ A.speakFR('Écrivez votre prénom.'); $('#in-name').classList.add('err'); }
+  function fbKoLogin(){ A.say('Écrivez votre prénom.'); $('#in-name').classList.add('err'); }
   $('#go').onclick=go; $('#in-name').onkeydown=e=>{ if(e.key==='Enter') go(); };
 }
 function installBanner(){
@@ -237,7 +237,7 @@ function vForm(a){
     a.fields.forEach(f=>{ const el=$('#f-'+f.k), v=el.value.trim(), ok=(CHECK[f.check]||CHECK.any)(v); el.classList.toggle('err',!ok);
       if(first) judge(ok,f.label,v||'(vide)'); if(!ok) errs.push(f.err); });
     first=false;
-    if(!errs.length){ fbOk('Fiche complète !'); setTimeout(()=>finish(),900); } else fbKo(errs.join(' '));
+    if(!errs.length){ fbOk('Fiche complète !'); setTimeout(()=>finish(),900); } else fbKo(errs);
   };
 }
 function vMath(a){

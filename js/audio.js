@@ -29,13 +29,24 @@ function speakFR(text){ if(!TTS.ok) return false;
 
 let current=null;
 async function cachedUrl(u){ try{ if('caches' in window){ const c=await caches.open('nsa-voix'); const m=await c.match(u); if(m) return URL.createObjectURL(await m.blob()); } }catch(e){} return u; }
+/* --- fichiers audio préparés (voix française de synthèse, identique sur tous les téléphones) --- */
+let manifest={}; const mp=fetch('audio/manifest.json').then(r=>r.json()).then(m=>{manifest=m;}).catch(()=>{});
+function playFile(url){ return new Promise((res,rej)=>{ const a=new Audio(url); current=a; a.onended=()=>res(true); a.onerror=()=>rej(new Error('audio')); a.play().catch(rej); }); }
+async function say(texts){
+  if(!Array.isArray(texts)) texts=[texts];
+  if(current){ current.pause(); current=null; } if(TTS.ok&&speechSynthesis.speaking) speechSynthesis.cancel();
+  for(const t of texts){ const f=manifest[t];
+    if(f){ try{ await playFile('audio/'+f); continue; }catch(e){} }
+    speakFR(t); return; }
+}
 async function play(key,text){
   if(current){ current.pause(); current=null; }
   const f=index[key];
   if(f && S.online()){
-    try{ const a=new Audio(await cachedUrl(pub(f))); current=a; await a.play(); return 'voix'; }catch(e){ /* repli synthèse */ }
+    try{ await playFile(pub(f)); return 'voix'; }catch(e){ /* repli : fichier préparé ou synthèse */ }
   }
+  if(manifest[text]){ try{ playFile('audio/'+manifest[text]).catch(()=>speakFR(text)); return 'fichier'; }catch(e){} }
   return speakFR(text)?'synthese':'aucun';
 }
-window.NSA_AUDIO={play,speakFR,loadIndex,pickVoice,TTS,index:()=>index,pub};
+window.NSA_AUDIO={play,say,speakFR,loadIndex,pickVoice,TTS,index:()=>index,pub};
 })();

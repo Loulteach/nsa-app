@@ -1,9 +1,10 @@
 /* Service worker : l'application et les semaines marchent sans Internet. */
-const VERSION='nsa-v2';
+const VERSION='nsa-v3';
 const SHELL=['./','index.html','css/app.css','js/config.js','js/store.js','js/pictos.js','js/content.js','js/audio.js','js/app.js',
   'fonts/lexend-latin.woff2','fonts/playwrite-fr.woff2','manifest.webmanifest','icons/icon-192.png','icons/icon-180.png',
   'weeks/index.json','weeks/semaine-1.json','weeks/semaine-2.json'];
-self.addEventListener('install',e=>{ e.waitUntil(caches.open(VERSION).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())); });
+self.addEventListener('install',e=>{ e.waitUntil(caches.open(VERSION).then(async c=>{ await c.addAll(SHELL.concat(['audio/manifest.json']));
+  try{ const m=await (await fetch('audio/manifest.json')).json(); await c.addAll([...new Set(Object.values(m))].map(f=>'audio/'+f)); }catch(e){} }).then(()=>self.skipWaiting())); });
 self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==VERSION&&k!=='nsa-voix').map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
 self.addEventListener('fetch',e=>{
   const u=new URL(e.request.url);
