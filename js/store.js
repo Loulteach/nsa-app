@@ -2,6 +2,8 @@
 (function(){
 const C=window.NSA_CONFIG||{};
 const online=()=>!!(C.supabaseUrl&&C.supabaseAnonKey);
+/* clé publique : les anciennes clés (eyJ…) vont aussi dans Authorization, les nouvelles (sb_publishable_…) seulement dans apikey */
+const anonHeaders=(extra)=>Object.assign({apikey:C.supabaseAnonKey},String(C.supabaseAnonKey).startsWith('eyJ')?{Authorization:'Bearer '+C.supabaseAnonKey}:{},extra||{});
 let dbp=null;
 function db(){ if(dbp) return dbp; dbp=new Promise((res,rej)=>{const r=indexedDB.open('nsa',1);
   r.onupgradeneeded=()=>{const d=r.result; d.createObjectStore('outbox',{keyPath:'id'}); d.createObjectStore('kv');};
@@ -30,12 +32,12 @@ async function flush(){
           const ext=(it.audio.type||'').includes('mp4')?'m4a':'webm';
           const path=`s${r.semaine}/${r.appareil}/${r.activite}-${it.id}.${ext}`;
           const up=await fetch(`${C.supabaseUrl}/storage/v1/object/eleves/${path}`,{method:'POST',
-            headers:{apikey:C.supabaseAnonKey,Authorization:'Bearer '+C.supabaseAnonKey,'Content-Type':it.audio.type||'application/octet-stream'},body:it.audio});
+            headers:anonHeaders({'Content-Type':it.audio.type||'application/octet-stream'}),body:it.audio});
           if(!up.ok && up.status!==409) throw new Error('audio '+up.status);
           r.audio_path=path;
         }
         const res=await fetch(`${C.supabaseUrl}/rest/v1/resultats`,{method:'POST',
-          headers:{apikey:C.supabaseAnonKey,Authorization:'Bearer '+C.supabaseAnonKey,'Content-Type':'application/json',Prefer:'return=minimal'},
+          headers:anonHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
           body:JSON.stringify(Object.assign({id:it.id},r))});
         if(!res.ok && res.status!==409) throw new Error('resultat '+res.status);
         await tx('outbox','readwrite',s=>s.delete(it.id));
