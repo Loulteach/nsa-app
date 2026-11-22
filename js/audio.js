@@ -19,13 +19,18 @@ function pickVoice(){ if(!TTS.ok) return null;
   const pref=[/thomas/i,/audrey/i,/aur[ée]lie/i,/marie/i,/google/i,/denise|henri|julie|paul|hortense/i];
   TTS.voice=pref.map(r=>vs.find(v=>r.test(v.name))).find(Boolean)||vs.find(v=>v.localService)||vs[0]||null; return TTS.voice; }
 if(TTS.ok){ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }
-function speakFR(text){ if(!TTS.ok) return false; const v=TTS.voice||pickVoice(); if(!v) return false;
-  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.voice=v; u.lang='fr-FR'; u.rate=.9; speechSynthesis.speak(u); return true; }catch(e){ return false; } }
-document.addEventListener('pointerdown',function unlock(){ if(TTS.ok){ try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; u.lang='fr-FR'; speechSynthesis.speak(u);}catch(e){} } },{once:true});
+function speakFR(text){ if(!TTS.ok) return false;
+  const all=speechSynthesis.getVoices(); const v=TTS.voice||pickVoice();
+  if(!v && all.length) return false; /* des voix existent mais aucune n'est française de France : on ne lit pas */
+  try{ const u=new SpeechSynthesisUtterance(text); if(v) u.voice=v; u.lang='fr-FR'; u.rate=.9; u.volume=1;
+    if(speechSynthesis.speaking||speechSynthesis.pending){ speechSynthesis.cancel(); setTimeout(()=>speechSynthesis.speak(u),80); }
+    else speechSynthesis.speak(u);
+    return true; }catch(e){ return false; } }
+
 let current=null;
 async function cachedUrl(u){ try{ if('caches' in window){ const c=await caches.open('nsa-voix'); const m=await c.match(u); if(m) return URL.createObjectURL(await m.blob()); } }catch(e){} return u; }
 async function play(key,text){
-  if(current){ current.pause(); current=null; } if(TTS.ok) speechSynthesis.cancel();
+  if(current){ current.pause(); current=null; }
   const f=index[key];
   if(f && S.online()){
     try{ const a=new Audio(await cachedUrl(pub(f))); current=a; await a.play(); return 'voix'; }catch(e){ /* repli synthèse */ }

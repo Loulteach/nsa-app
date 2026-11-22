@@ -18,7 +18,7 @@ let toastT; function toast(m){ let t=document.getElementById('toast'); if(!t){t=
 /* ---------- sons ---------- */
 const key=(suffix)=>`s${ST.week.n}-${ST.act.id}-${suffix}`;
 function playKey(k,text,btn){ if(btn){btn.classList.remove('on');void btn.offsetWidth;btn.classList.add('on');}
-  A.play(k,text).then(r=>{ if(r==='aucun') toast("Pas de son sur ce téléphone. Lisez la phrase."); }); }
+  A.play(k,text).then(r=>{ if(r==='aucun') toast("Pas de voix française sur ce téléphone. Lisez la phrase."); }); }
 
 /* ---------- gabarits ---------- */
 function header(a){
