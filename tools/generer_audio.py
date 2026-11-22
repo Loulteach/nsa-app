@@ -13,7 +13,7 @@ for t in textes:
     if man.get(t)==fid and os.path.exists(os.path.join(out,fid)): continue
     wav='/tmp/_nsa.wav'
     with wave.open(wav,'wb') as w: v.synthesize_wav(t,w,syn_config=cfg)
-    subprocess.run(['ffmpeg','-loglevel','error','-y','-i',wav,'-af','adelay=150,apad=pad_dur=0.2','-ac','1','-b:a','64k',os.path.join(out,fid)],check=True)
+    subprocess.run(['ffmpeg','-loglevel','error','-y','-i',wav,'-af','apad=pad_dur=0.15','-ac','1','-b:a','64k',os.path.join(out,fid)],check=True)
     man[t]=fid
 man={t:man[t] for t in textes if t in man}
 for f in os.listdir(out):

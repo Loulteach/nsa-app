@@ -28,25 +28,47 @@ function speakFR(text){ if(!TTS.ok) return false;
     return true; }catch(e){ return false; } }
 
 let current=null;
-async function cachedUrl(u){ try{ if('caches' in window){ const c=await caches.open('nsa-voix'); const m=await c.match(u); if(m) return URL.createObjectURL(await m.blob()); } }catch(e){} return u; }
 /* --- fichiers audio préparés (voix française de synthèse, identique sur tous les téléphones) --- */
 let manifest={}; const mp=fetch('audio/manifest.json').then(r=>r.json()).then(m=>{manifest=m;}).catch(()=>{});
-function playFile(url){ return new Promise((res,rej)=>{ const a=new Audio(url); current=a; a.onended=()=>res(true); a.onerror=()=>rej(new Error('audio')); a.play().catch(rej); }); }
+/* éléments audio préchargés pour l'écran affiché : la lecture démarre tout de suite au toucher */
+let pre={};
+function urlFor(key,text){
+  const f=index[key]; if(f && S.online() && canPlay(f)) return pub(f);
+  if(manifest[text]) return 'audio/'+manifest[text];
+  return null;
+}
+function canPlay(f){ const a=document.createElement('audio');
+  if(/\.webm$/.test(f)) return !!a.canPlayType('audio/webm; codecs="opus"');
+  if(/\.m4a$/.test(f)) return !!a.canPlayType('audio/mp4');
+  return true; }
+function stop(){ if(current){ try{ current.pause(); current.currentTime=0; }catch(e){} current=null; }
+  if(TTS.ok&&(speechSynthesis.speaking||speechSynthesis.pending)) speechSynthesis.cancel(); }
+function prepare(list){ /* list = [[key,text],…] */
+  const next={};
+  list.forEach(([k,t])=>{ const u=urlFor(k,t); if(!u) return; const id=k+'|'+t;
+    const a=(pre[id]&&pre[id].src.endsWith(u))?pre[id]:new Audio(u); a.preload='auto'; try{ a.load(); }catch(e){} next[id]=a; });
+  pre=next;
+}
+function playEl(a){ return new Promise((res,rej)=>{ current=a; a.onended=()=>res(true); a.onerror=()=>rej(new Error('audio'));
+  try{ a.currentTime=0; }catch(e){} const p=a.play(); if(p&&p.catch) p.catch(rej); }); }
+function playFile(url){ return playEl(new Audio(url)); }
 async function say(texts){
   if(!Array.isArray(texts)) texts=[texts];
-  if(current){ current.pause(); current=null; } if(TTS.ok&&speechSynthesis.speaking) speechSynthesis.cancel();
+  stop();
   for(const t of texts){ const f=manifest[t];
     if(f){ try{ await playFile('audio/'+f); continue; }catch(e){} }
     speakFR(t); return; }
 }
-async function play(key,text){
-  if(current){ current.pause(); current=null; }
-  const f=index[key];
-  if(f && S.online()){
-    try{ await playFile(pub(f)); return 'voix'; }catch(e){ /* repli : fichier préparé ou synthèse */ }
+function play(key,text){
+  stop();
+  const id=key+'|'+text, u=urlFor(key,text);
+  if(u){
+    const a=pre[id]||new Audio(u);
+    playEl(a).catch(()=>{ /* repli : fichier préparé puis synthèse */
+      const m=manifest[text]; if(m && !a.src.endsWith(m)) playFile('audio/'+m).catch(()=>speakFR(text)); else speakFR(text); });
+    return Promise.resolve(index[key]?'voix':'fichier');
   }
-  if(manifest[text]){ try{ playFile('audio/'+manifest[text]).catch(()=>speakFR(text)); return 'fichier'; }catch(e){} }
-  return speakFR(text)?'synthese':'aucun';
+  return Promise.resolve(speakFR(text)?'synthese':'aucun');
 }
-window.NSA_AUDIO={play,say,speakFR,loadIndex,pickVoice,TTS,index:()=>index,pub};
+window.NSA_AUDIO={play,say,stop,prepare,speakFR,loadIndex,pickVoice,TTS,index:()=>index,pub};
 })();

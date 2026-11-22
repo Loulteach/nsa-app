@@ -363,10 +363,11 @@ async function route(){
   ST.screen='home'; render();
 }
 function render(){
-  clearInterval(recInt);
+  clearInterval(recInt); A.stop();
   if(ST.screen==='login') vLogin(); else if(ST.screen==='home') vHome(); else if(ST.screen==='week') vWeek();
   else if(ST.screen==='bravo') vBravo(); else VIEWS[ST.act.type](ST.act);
   window.scrollTo(0,0);
+  A.prepare([...app.querySelectorAll('[data-key]')].map(b=>[b.dataset.key,b.dataset.text]));
 }
 app.addEventListener('click',e=>{
   const k=e.target.closest('[data-key]'); if(k){ playKey(k.dataset.key,k.dataset.text,k.classList.contains('spk')?k:null); return; }
