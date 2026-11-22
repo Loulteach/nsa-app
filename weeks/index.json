@@ -1,4 +1,17 @@
-{"semaines":[
- {"n":1,"titre":"Mon identité","son":"[a]","verbes":"être, avoir"},
- {"n":2,"titre":"Mon identité (suite)","son":"[i]","verbes":"s'appeler, habiter"}
-]}
+{
+ "semaines": [
+  {
+   "n": 1,
+   "titre": "Mon identité",
+   "son": "[a]",
+   "verbes": "être, avoir"
+  },
+  {
+   "n": 2,
+   "titre": "Mon identité (suite)",
+   "son": "[i]",
+   "verbes": "s'appeler, habiter",
+   "cachee": true
+  }
+ ]
+}

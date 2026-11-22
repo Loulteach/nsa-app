@@ -77,7 +77,7 @@ function vHome(){
   app.innerHTML=`
    <div style="display:grid;gap:6px"><h1>Bonjour ${esc(ST.prenom)} !</h1><p class="muted">Choisissez votre semaine.</p></div>
    ${installBanner()}
-   <div class="cards">${ST.weeks.map(w=>{const r=getRes(w.n);const d=Object.keys(r).length;return `
+   <div class="cards">${ST.weeks.filter(w=>!w.cachee||(S.ls('vues')||[]).includes(w.n)).map(w=>{const r=getRes(w.n);const d=Object.keys(r).length;return `
      <button class="card" data-week="${w.n}"><span class="pic" style="display:grid;place-items:center;font:700 1.6rem var(--f-body);color:var(--ink);background:var(--surface2)">${w.n}</span>
       <span class="txt"><b>Semaine ${w.n} · ${esc(w.titre)}</b><span class="muted" style="font-size:.85rem">Son ${esc(w.son)} · ${esc(w.verbes)}</span></span>
       ${d?`<span class="chip">${d} ✓</span>`:''}</button>`}).join('')}</div>
@@ -359,7 +359,7 @@ async function loadWeek(n){
 async function route(){
   if(!ST.prenom){ ST.screen='login'; return render(); }
   const m=location.hash.match(/semaine-(\d+)/);
-  if(m){ const w=await loadWeek(+m[1]); if(w){ ST.week=w; ST.screen='week'; return render(); } }
+  if(m){ const w=await loadWeek(+m[1]); if(w){ const v=S.ls('vues')||[]; if(!v.includes(w.n)){ v.push(w.n); S.ls('vues',v); } ST.week=w; ST.screen='week'; return render(); } }
   ST.screen='home'; render();
 }
 function render(){

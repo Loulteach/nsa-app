@@ -1,5 +1,5 @@
 /* Service worker : l'application et les semaines marchent sans Internet. */
-const VERSION='nsa-v4';
+const VERSION='nsa-v5';
 const SHELL=['./','index.html','css/app.css','js/config.js','js/store.js','js/pictos.js','js/content.js','js/audio.js','js/app.js',
   'fonts/lexend-latin.woff2','fonts/playwrite-fr.woff2','manifest.webmanifest','icons/icon-192.png','icons/icon-180.png',
   'weeks/index.json','weeks/semaine-1.json','weeks/semaine-2.json'];
