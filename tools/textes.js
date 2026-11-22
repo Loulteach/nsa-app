@@ -3,7 +3,7 @@ const fs=require('fs'),path=require('path');const {audioList}=require('../js/con
 const root=path.join(__dirname,'..');const idx=JSON.parse(fs.readFileSync(path.join(root,'weeks/index.json')));
 const T=new Set(["Écrivez votre prénom. Touchez la flèche.","Écrivez votre prénom.",
  "Essayez encore.","Écoutez encore.","Regardez bien. Essayez encore.","Tracez avec votre doigt.","Suivez bien les pointillés.",
- "Pas encore. Cherchez la lettre suivante.","Comptez avec votre doigt. Essayez encore.","Comptez encore.","Regardez le tableau. Essayez encore.",
+ "Pas encore. Cherchez la lettre suivante.","Pas encore. Regardez la lettre grise. Touchez la même lettre.","Regardez la lettre qui clignote. Touchez-la.","Bravo !","Comptez avec votre doigt. Essayez encore.","Comptez encore.","Regardez le tableau. Essayez encore.",
  "Le micro est bloqué. Autorisez le micro dans les réglages du téléphone."]);
 for(const w of idx.semaines){const wk=JSON.parse(fs.readFileSync(path.join(root,`weeks/semaine-${w.n}.json`)));
   audioList(wk).forEach(x=>T.add(x.text));

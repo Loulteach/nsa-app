@@ -197,17 +197,33 @@ function vTrace(a){
 function vOrder(a){
   const name=norm(ST.prenom)||'A';
   if(ST.step===0){
-    if(!ST.tmp.tiles){ ST.tmp.tiles=shuffle(name.split('').map(c=>({c}))); ST.tmp.got=[]; ST.tmp.err=0; }
+    if(!ST.tmp.tiles){ ST.tmp.tiles=shuffle(name.split('').map(c=>({c}))); ST.tmp.got=[]; ST.tmp.err=0; ST.tmp.miss=0; }
     const got=ST.tmp.got;
-    app.innerHTML=`${header(a)}${prog(2,0)}${consigne(a.consigne)}${model(a.exemple)}
-     <div class="slots">${name.split('').map((c,i)=>`<span class="slot ${i<got.length?'f':''}">${i<got.length?got[i]:''}</span>`).join('')}</div>
+    app.innerHTML=`${header(a)}${prog(2,0)}${consigne(a.consigne)}
+     <p class="muted center">Votre prénom : <b style="font-size:1.3rem;letter-spacing:.1em">${esc(name)}</b></p>
+     <div class="slots" id="slots">${name.split('').map((c,i)=>`<span class="slot ${i<got.length?'f':''}">${i<got.length?got[i]:`<i class="ghost">${c}</i>`}</span>`).join('')}</div>
      <div class="tiles">${ST.tmp.tiles.map((t,k)=>`<button class="tile" data-k="${k}" ${t.used?'disabled':''}>${t.c}</button>`).join('')}</div><div id="fb"></div>`;
+    const slots=[...app.querySelectorAll('#slots .slot')];
+    const mark=()=>{ slots.forEach((el,i)=>el.classList.toggle('next',i===got.length));
+      app.querySelectorAll('.tile').forEach(b=>b.classList.remove('hint')); };
+    mark();
     app.querySelectorAll('.tile').forEach(b=>b.onclick=()=>{
+      if(got.length>=name.length) return;
       const t=ST.tmp.tiles[+b.dataset.k];
-      if(t.c===name[got.length]){ t.used=true; got.push(t.c);
-        if(got.length===name.length){ judge(ST.tmp.err===0,'Remettre son prénom dans l\'ordre',ST.tmp.err?ST.tmp.err+' erreur(s) avant de réussir':'sans erreur'); ST.step=1; ST.tmp.tiles=null; }
-        render(); }
-      else { ST.tmp.err++; fbKo('Pas encore. Cherchez la lettre suivante.'); }
+      if(t.c===name[got.length]){
+        t.used=true; b.disabled=true; const el=slots[got.length]; el.classList.add('f'); el.textContent=t.c; got.push(t.c); ST.tmp.miss=0;
+        const f=$('#fb'); if(f) f.innerHTML=''; mark();
+        if(got.length===name.length){ judge(ST.tmp.err===0,'Remettre son prénom dans l\'ordre',ST.tmp.err?ST.tmp.err+' erreur(s) avant de réussir':'sans erreur');
+          fbOk('Bravo !'); setTimeout(()=>{ ST.step=1; ST.tmp.tiles=null; render(); },900); }
+      } else {
+        ST.tmp.err++; ST.tmp.miss++;
+        b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+        if(ST.tmp.miss>=2){ /* aide : la bonne lettre s'allume */
+          const k=ST.tmp.tiles.findIndex(x=>!x.used&&x.c===name[got.length]);
+          const h=app.querySelector(`.tile[data-k="${k}"]`); if(h) h.classList.add('hint');
+          fbKo('Regardez la lettre qui clignote. Touchez-la.');
+        } else fbKo('Pas encore. Regardez la lettre grise. Touchez la même lettre.');
+      }
     });
   } else {
     const n=name.length, opts=shuffle([n-1,n,n+1].filter(x=>x>0).concat(n===1?[3]:[]));
