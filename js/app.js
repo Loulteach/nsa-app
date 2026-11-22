@@ -5,7 +5,7 @@ const app=document.getElementById('app');
 const $=s=>app.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1).toLowerCase();
-const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z]/g,'');
+const norm=s=>s.normalize('NFC').toUpperCase().replace(/[^A-ZÀ-ÖØ-Þ]/g,'');
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
 
 const ST={screen:'login',weeks:[],week:null,act:null,step:0,t0:0,tmp:{},prenom:S.ls('prenom')||'',appareil:S.ls('appareil')};
@@ -362,11 +362,13 @@ async function route(){
   if(m){ const w=await loadWeek(+m[1]); if(w){ const v=S.ls('vues')||[]; if(!v.includes(w.n)){ v.push(w.n); S.ls('vues',v); } ST.week=w; ST.screen='week'; return render(); } }
   ST.screen='home'; render();
 }
+let lastView='';
 function render(){
-  clearInterval(recInt); A.stop();
+  const view=[ST.screen,ST.week&&ST.week.n,ST.act&&ST.act.id,ST.step].join('|'), same=view===lastView; lastView=view;
+  clearInterval(recInt); if(!same) A.stop();
   if(ST.screen==='login') vLogin(); else if(ST.screen==='home') vHome(); else if(ST.screen==='week') vWeek();
   else if(ST.screen==='bravo') vBravo(); else VIEWS[ST.act.type](ST.act);
-  window.scrollTo(0,0);
+  if(!same) window.scrollTo(0,0); /* même écran (ex. une lettre du prénom) : on ne remonte pas en haut */
   A.prepare([...app.querySelectorAll('[data-key]')].map(b=>[b.dataset.key,b.dataset.text]));
 }
 app.addEventListener('click',e=>{
