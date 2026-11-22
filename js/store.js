@@ -1,0 +1,49 @@
+/* Stockage local (IndexedDB) + envoi vers Supabase quand Internet est disponible. */
+(function(){
+const C=window.NSA_CONFIG||{};
+const online=()=>!!(C.supabaseUrl&&C.supabaseAnonKey);
+let dbp=null;
+function db(){ if(dbp) return dbp; dbp=new Promise((res,rej)=>{const r=indexedDB.open('nsa',1);
+  r.onupgradeneeded=()=>{const d=r.result; d.createObjectStore('outbox',{keyPath:'id'}); d.createObjectStore('kv');};
+  r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);}); return dbp; }
+function tx(store,mode,fn){ return db().then(d=>new Promise((res,rej)=>{const t=d.transaction(store,mode);const s=t.objectStore(store);const out=fn(s);
+  t.oncomplete=()=>res(out&&out.result!==undefined?out.result:out); t.onerror=()=>rej(t.error);})); }
+const uid=()=> (crypto.randomUUID?crypto.randomUUID():'x'+Date.now()+Math.random().toString(16).slice(2));
+
+function ls(k,v){ try{ if(v===undefined) return JSON.parse(localStorage.getItem('nsa:'+k)); localStorage.setItem('nsa:'+k,JSON.stringify(v)); }catch(e){ return null; } }
+
+async function queue(result, audioBlob){
+  const item={id:uid(), result, audio:audioBlob||null, t:Date.now()};
+  try{ await tx('outbox','readwrite',s=>s.put(item)); }catch(e){ console.warn('outbox',e); }
+  flush();
+}
+let flushing=false;
+async function flush(){
+  if(!online()||flushing||!navigator.onLine) return;
+  flushing=true;
+  try{
+    const items=await tx('outbox','readonly',s=>s.getAll());
+    for(const it of items){
+      try{
+        const r=Object.assign({},it.result);
+        if(it.audio){
+          const ext=(it.audio.type||'').includes('mp4')?'m4a':'webm';
+          const path=`s${r.semaine}/${r.appareil}/${r.activite}-${it.id}.${ext}`;
+          const up=await fetch(`${C.supabaseUrl}/storage/v1/object/eleves/${path}`,{method:'POST',
+            headers:{apikey:C.supabaseAnonKey,Authorization:'Bearer '+C.supabaseAnonKey,'Content-Type':it.audio.type||'application/octet-stream'},body:it.audio});
+          if(!up.ok && up.status!==409) throw new Error('audio '+up.status);
+          r.audio_path=path;
+        }
+        const res=await fetch(`${C.supabaseUrl}/rest/v1/resultats`,{method:'POST',
+          headers:{apikey:C.supabaseAnonKey,Authorization:'Bearer '+C.supabaseAnonKey,'Content-Type':'application/json',Prefer:'return=minimal'},
+          body:JSON.stringify(Object.assign({id:it.id},r))});
+        if(!res.ok && res.status!==409) throw new Error('resultat '+res.status);
+        await tx('outbox','readwrite',s=>s.delete(it.id));
+      }catch(e){ console.warn('envoi reporté',e); break; }
+    }
+  } finally { flushing=false; document.dispatchEvent(new Event('nsa-sync')); }
+}
+async function pending(){ try{ return (await tx('outbox','readonly',s=>s.count())); }catch(e){ return 0; } }
+window.addEventListener('online',flush);
+window.NSA_STORE={ls,queue,flush,pending,online,uid};
+})();
