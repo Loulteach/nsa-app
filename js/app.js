@@ -71,7 +71,10 @@ async function syncLine(){
   const el=$('#sync'); if(!el) return;
   if(!S.online()){ el.textContent=''; return; }
   const p=await S.pending();
-  el.textContent = p ? `${p} résultat(s) en attente d'Internet` : 'Résultats envoyés à votre formatrice ✓';
+  const err=S.ls('lastErr');
+  el.textContent = p ? `${p} résultat(s) en attente d'envoi. Touchez ici pour réessayer.` : 'Résultats envoyés à votre formatrice ✓';
+  if(p && err) el.textContent+=` (Erreur : ${err})`;
+  el.onclick=()=>{ el.textContent='Envoi en cours…'; S.flush(); };
 }
 function vHome(){
   app.innerHTML=`

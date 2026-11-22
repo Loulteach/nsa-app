@@ -21,7 +21,7 @@ async function queue(result, audioBlob){
 }
 let flushing=false;
 async function flush(){
-  if(!online()||flushing||!navigator.onLine) return;
+  if(flushing) return; if(!online()||!navigator.onLine){ document.dispatchEvent(new Event('nsa-sync')); return; }
   flushing=true;
   try{
     const items=await tx('outbox','readonly',s=>s.getAll());
@@ -33,15 +33,15 @@ async function flush(){
           const path=`s${r.semaine}/${r.appareil}/${r.activite}-${it.id}.${ext}`;
           const up=await fetch(`${C.supabaseUrl}/storage/v1/object/eleves/${path}`,{method:'POST',
             headers:anonHeaders({'Content-Type':it.audio.type||'application/octet-stream'}),body:it.audio});
-          if(!up.ok && up.status!==409) throw new Error('audio '+up.status);
-          r.audio_path=path;
+          if(up.ok || up.status===409 || up.status===400&&/exist/i.test(await up.clone().text())) r.audio_path=path;
+          else ls('lastErr','audio '+up.status+' '+(await up.text()).slice(0,120)); /* le score part quand même */
         }
         const res=await fetch(`${C.supabaseUrl}/rest/v1/resultats`,{method:'POST',
           headers:anonHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
           body:JSON.stringify(Object.assign({id:it.id},r))});
-        if(!res.ok && res.status!==409) throw new Error('resultat '+res.status);
-        await tx('outbox','readwrite',s=>s.delete(it.id));
-      }catch(e){ console.warn('envoi reporté',e); if(!navigator.onLine) break; }
+        if(!res.ok && res.status!==409){ const t=(await res.text()).slice(0,160); throw new Error(res.status+' '+t); }
+        await tx('outbox','readwrite',s=>s.delete(it.id)); if(!it.audio||r.audio_path) ls('lastErr','');
+      }catch(e){ console.warn('envoi reporté',e); ls('lastErr',String(e&&e.message||e)); if(!navigator.onLine) break; }
     }
   } finally { flushing=false; document.dispatchEvent(new Event('nsa-sync')); }
 }
