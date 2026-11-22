@@ -29,10 +29,10 @@ async function flush(){
       try{
         const r=Object.assign({},it.result);
         if(it.audio){
-          const ext=(it.audio.type||'').includes('mp4')?'m4a':'webm';
+          const ty=it.audio.type||'', ext=ty.includes('mpeg')?'mp3':ty.includes('mp4')?'m4a':'webm';
           const path=`s${r.semaine}/${r.appareil}/${r.activite}-${it.id}.${ext}`;
           const up=await fetch(`${C.supabaseUrl}/storage/v1/object/eleves/${path}`,{method:'POST',
-            headers:anonHeaders({'Content-Type':it.audio.type||'application/octet-stream'}),body:it.audio});
+            headers:anonHeaders({'Content-Type':ty.split(';')[0]||'application/octet-stream'}),body:it.audio});
           if(up.ok || up.status===409 || up.status===400&&/exist/i.test(await up.clone().text())) r.audio_path=path;
           else ls('lastErr','audio '+up.status+' '+(await up.text()).slice(0,120)); /* le score part quand même */
         }

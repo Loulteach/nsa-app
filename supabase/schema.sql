@@ -32,7 +32,7 @@ create policy "formatrice supprime" on public.resultats for delete to authentica
 -- 3. Fichiers audio : "voix" (votre voix, lisible par tous) et "eleves" (enregistrements des élèves, privés)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('voix', 'voix', true, 5242880, array['audio/mp4','audio/webm','audio/mpeg','audio/ogg','audio/x-m4a','application/json']),
-       ('eleves', 'eleves', false, 10485760, array['audio/mp4','audio/webm','audio/ogg','audio/x-m4a'])
+       ('eleves', 'eleves', false, 10485760, array['audio/mpeg','audio/mp4','audio/webm','audio/ogg','audio/x-m4a'])
 on conflict (id) do nothing;
 
 drop policy if exists "voix formatrice lit" on storage.objects;

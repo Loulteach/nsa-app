@@ -41,7 +41,9 @@ function finish(extra){
   const a=ST.act,t=ST.tmp,w=ST.week;
   const duree=Math.max(1,Math.round((Date.now()-ST.t0)/1000));
   const r=getRes(w.n); r[a.id]={score:t.score,total:t.total,duree}; S.ls(resKey(w.n),r);
-  S.queue({eleve:ST.prenom,appareil:ST.appareil,semaine:w.n,activite:a.id,titre:a.titre,score:t.score,total:t.total,duree_s:duree,reponses:t.answers},extra&&extra.audio);
+  const res={eleve:ST.prenom,appareil:ST.appareil,semaine:w.n,activite:a.id,titre:a.titre,score:t.score,total:t.total,duree_s:duree,reponses:t.answers};
+  const au=extra&&extra.audio;
+  if(au&&window.toMp3&&window.lamejs) window.toMp3(au).then(b=>S.queue(res,b&&b.size>1000?b:au),()=>S.queue(res,au)); else S.queue(res,au);
   ST.screen='bravo'; render();
 }
 
