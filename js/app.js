@@ -8,7 +8,7 @@ const cap=s=>s.charAt(0).toUpperCase()+s.slice(1).toLowerCase();
 const norm=s=>s.normalize('NFC').toUpperCase().replace(/[^A-ZÀ-ÖØ-Þ]/g,'');
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
 
-const ST={screen:'login',weeks:[],week:null,act:null,step:0,t0:0,tmp:{},prenom:S.ls('prenom')||'',appareil:S.ls('appareil')};
+const ST={said:new Set(),busy:false,lastC:null,screen:'login',weeks:[],week:null,act:null,step:0,t0:0,tmp:{},prenom:S.ls('prenom')||'',appareil:S.ls('appareil')};
 if(!ST.appareil){ ST.appareil=S.uid().slice(0,12); S.ls('appareil',ST.appareil); }
 const resKey=n=>'res-s'+n;
 const getRes=n=>S.ls(resKey(n))||{};
@@ -18,7 +18,12 @@ let toastT; function toast(m){ let t=document.getElementById('toast'); if(!t){t=
 /* ---------- sons ---------- */
 const key=(suffix)=>`s${ST.week.n}-${ST.act.id}-${suffix}`;
 function playKey(k,text,btn){ if(btn){btn.classList.remove('on');void btn.offsetWidth;btn.classList.add('on');}
-  A.play(k,text).then(r=>{ if(r==='aucun') toast("Pas de voix française sur ce téléphone. Lisez la phrase."); }); }
+  A.play(k,text).then(r=>{ if(r==='aucun'){ toast("Pas de voix française sur ce téléphone. Lisez la phrase."); if(btn&&btn.classList.contains('spk')) said(k); } }); }
+/* après la consigne, les boutons « Écouter » s'allument */
+function invite(){ const c=app.querySelector('.consigne .spk'); if(!c||!ST.said.has(c.dataset.key)) return;
+  app.querySelectorAll('[data-key]:not(.spk)').forEach(b=>{ if(!b.dataset.heard) b.classList.add('invite'); }); }
+function said(k){ ST.said.add(k); invite(); }
+document.addEventListener('nsa-audio-end',e=>{ const k=e.detail&&e.detail.key; const c=app.querySelector('.consigne .spk'); if(c&&k===c.dataset.key) said(k); });
 
 /* ---------- gabarits ---------- */
 function header(a){
@@ -31,7 +36,7 @@ const listen=(label,i,text)=>`<button class="btn ghost" data-key="${esc(key(Stri
 const prog=(n,i)=>`<div class="prog">${Array.from({length:n},(_,k)=>`<i class="${k<i?'d':''}"></i>`).join('')}</div>`;
 function stars(score,total){const n=total?Math.round(score/total*3):0;return `<span class="stars" aria-label="${n} étoiles sur 3">${[0,1,2].map(k=>`<span class="${k<n?'on':''}">${ico.star}</span>`).join('')}</span>`;}
 const model=t=>t?`<div class="model"><b>Exemple :</b> ${esc(t)}</div>`:'';
-const fbOk=t=>{ $('#fb').innerHTML=`<div class="fb ok">${ico.check} ${esc(t)}</div>`; };
+const fbOk=t=>{ ST.busy=true; $('#fb').innerHTML=`<div class="fb ok">${ico.check} ${esc(t)}</div>`; };
 function fbKo(t){ const parts=Array.isArray(t)?t:[t], txt=parts.join(' '); const f=$('#fb'); f.innerHTML=`<div class="fb ko" title="Toucher pour réécouter">${esc(txt)}</div>`; A.say(parts); f.firstChild.onclick=()=>A.say(parts); }
 
 /* ---------- résultats ---------- */
@@ -191,7 +196,7 @@ function vTrace(a){
     for(let i=3;i<gd.length;i+=16){ const gi=gd[i]>60,ui=ud[i]>60; if(gi)gn++; if(ui)un++; if(gi&&ui)hit++; }
     if(un<20){ fbKo('Tracez avec votre doigt.'); return; }
     const cover=gn?hit/gn:0, prec=un?hit/un:0, ok=cover>.35&&prec>.45;
-    judge(ok,`Tracer « ${ch} » (${cursive?'cursive':'capitale'})`,Math.round(cover*100)+' % de la lettre couverte');
+    ST.busy=true; judge(ok,`Tracer « ${ch} » (${cursive?'cursive':'capitale'})`,Math.round(cover*100)+' % de la lettre couverte');
     if(ok) fbOk('Bien tracé !'); else fbKo('Suivez bien les pointillés.');
     setTimeout(()=>nextStep(a.items.length),1100);
   };
@@ -371,7 +376,106 @@ function vRecord(a){
     $('#send').onclick=()=>{ ST.tmp.total=1; ST.tmp.score=1; ST.tmp.answers=[{q:a.titre,given:'Enregistrement de '+ST.tmp.dur+' s',ok:true}]; finish({audio:ST.tmp.blob}); };
   }
 }
-const VIEWS={choice:vChoice,sound:vSound,letters:vLetters,trace:vTrace,order:vOrder,form:vForm,math:vMath,keypad:vKeypad,map:vMap,plan:vPlan,conj:vConj,record:vRecord};
+
+/* ---------- dates ---------- */
+const pad=n=>String(n).padStart(2,'0');
+function vDate(a){
+  const it=a.items[ST.step], txt=CT.dateText(it), num=pad(it.j)+'/'+pad(it.m);
+  const first=a.items.findIndex(x=>x.sens===it.sens)===ST.step;
+  if(it.sens==='l2c'){
+    if(ST.tmp.dg==null) ST.tmp.dg='';
+    const dg=ST.tmp.dg, box=i=>`<span class="dbox ${i===dg.length?'next':''}">${dg[i]||''}</span>`;
+    app.innerHTML=`${header(a)}${prog(a.items.length,ST.step)}${consigne(a.consigne)}${first?model(a.exemple):''}
+     <p class="word-big" style="font-size:1.9rem">${esc(txt)}</p>
+     ${listen('Écouter la date',ST.step,txt)}
+     <div class="datebox">${box(0)}${box(1)}<b>/</b>${box(2)}${box(3)}</div>
+     <div class="grid" style="--n:5">${'1234567890'.split('').map(d=>`<button class="opt txt" style="font-size:1.9rem" data-d="${d}">${d}</button>`).join('')}</div>
+     <button class="btn ghost" id="er">${ico.erase} Effacer</button><div id="fb"></div>`;
+    app.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{ if(ST.tmp.dg.length>=4) return; ST.tmp.dg+=b.dataset.d;
+      const bx=app.querySelectorAll('.dbox'); bx.forEach((x,i)=>{ x.textContent=ST.tmp.dg[i]||''; x.classList.toggle('next',i===ST.tmp.dg.length); });
+      if(ST.tmp.dg.length===4){ const given=ST.tmp.dg.slice(0,2)+'/'+ST.tmp.dg.slice(2), ok=given===num;
+        if(!ST.tmp.tried){ judge(ok,txt,given); ST.tmp.tried=true; }
+        if(ok){ fbOk(`${txt} → ${num}`); setTimeout(()=>{ ST.tmp.dg=null; ST.tmp.tried=false; nextStep(a.items.length); },1300); }
+        else { fbKo('Pas encore. Écoutez encore la date.'); setTimeout(()=>{ if(ST.act===a&&!ST.busy){ ST.tmp.dg=''; render(); } },1400); } } });
+    $('#er').onclick=()=>{ ST.tmp.dg=ST.tmp.dg.slice(0,-1); render(); };
+  } else {
+    if(!ST.tmp.dp){ ST.tmp.dp=0; ST.tmp.derr=0; ST.tmp.dj=shuffle(it.oj); ST.tmp.dm=shuffle(it.om); }
+    const dp=ST.tmp.dp, jw=it.j===1?'premier':CT.NUM[it.j], mw=CT.MOIS[it.m];
+    const opts=dp===0?ST.tmp.dj:ST.tmp.dm;
+    app.innerHTML=`${header(a)}${prog(a.items.length,ST.step)}${consigne(a.consigne2,key('c2'))}${first?model(a.exemple2):''}
+     <p class="word-big" style="font-size:2.6rem;letter-spacing:.05em">${num}</p>
+     <p class="sentence-fill" style="text-align:center">le <span class="blank ${dp>0?'f':''} ${dp===0?'next':''}">${dp>0?esc(jw):'&nbsp;'}</span> <span class="blank ${dp===1?'next':''}">&nbsp;</span></p>
+     <div class="grid" style="--n:${opts.length}">${opts.map(o=>`<button class="opt word" data-k="${esc(o)}">${esc(o)}</button>`).join('')}</div><div id="fb"></div>`;
+    app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+      const want=dp===0?jw:mw, ok=b.dataset.k===want;
+      if(!ok){ ST.tmp.derr++; b.classList.add('bad'); fbKo(dp===0?'Regardez le jour. Essayez encore.':'Regardez le mois. Essayez encore.'); return; }
+      if(dp===0){ ST.tmp.dp=1; render(); return; }
+      judge(ST.tmp.derr===0,num,txt+(ST.tmp.derr?` (${ST.tmp.derr} erreur(s) avant)`:''));
+      app.querySelectorAll('.blank')[1].textContent=mw; app.querySelectorAll('.blank')[1].classList.add('f');
+      fbOk(txt); playKey(key(String(ST.step+1)),txt);
+      setTimeout(()=>{ ST.tmp.dp=null; nextStep(a.items.length); },1600);
+    });
+  }
+}
+/* ---------- syllabes ---------- */
+const SYC=['#2b62d9','#e2453c'];
+function vSyllCut(a){
+  const it=a.items[ST.step], letters=it.s.join('').split('');
+  const want=[]; it.s.reduce((n,x)=>{ n+=x.length; if(n<letters.length) want.push(n); return n; },0);
+  if(!ST.tmp.cuts) ST.tmp.cuts=[];
+  const cuts=ST.tmp.cuts;
+  app.innerHTML=`${header(a)}${prog(a.items.length,ST.step)}${consigne(a.consigne)}${ST.step===0?model(a.exemple):''}
+   ${listen('Écouter le mot',ST.step,it.w)}
+   <div class="wordcut">${letters.map((c,i)=>(i?`<button class="cut ${cuts.includes(i)?'on':''}" data-i="${i}" aria-label="Couper ici"></button>`:'')+`<span class="lt">${esc(c)}</span>`).join('')}</div>
+   <button class="btn" id="ok">${ico.check} Je valide</button><div id="fb"></div>`;
+  app.querySelectorAll('.cut').forEach(b=>b.onclick=()=>{ const i=+b.dataset.i, k=cuts.indexOf(i); if(k<0) cuts.push(i); else cuts.splice(k,1); b.classList.toggle('on',k<0); });
+  $('#ok').onclick=()=>{
+    const ok=cuts.length===want.length&&want.every(x=>cuts.includes(x));
+    const given=letters.map((c,i)=>(cuts.includes(i)?' | ':'')+c).join('');
+    if(!ST.tmp.tried){ judge(ok,it.w,given); ST.tmp.tried=true; }
+    if(ok){ let n=0; app.querySelector('.wordcut').innerHTML=it.s.map((x,k)=>`<span class="lt" style="color:${SYC[k%2]}">${esc(x)}</span>`).join('<span class="cut on" aria-hidden="true"></span>');
+      fbOk(it.s.join(' | ')); setTimeout(()=>{ ST.tmp.cuts=null; ST.tmp.tried=false; nextStep(a.items.length); },1400); }
+    else fbKo(cuts.length?'Pas encore. Écoutez le mot. Coupez entre les syllabes.':'Touchez entre deux lettres pour couper.');
+  };
+}
+function vSyllBuild(a){
+  const it=a.items[ST.step];
+  if(!ST.tmp.tiles){ ST.tmp.tiles=shuffle(it.s.concat(it.x||[]).map(c=>({c}))); ST.tmp.got=[]; ST.tmp.err=0; ST.tmp.miss=0; }
+  const got=ST.tmp.got;
+  app.innerHTML=`${header(a)}${prog(a.items.length,ST.step)}${consigne(a.consigne)}${ST.step===0?model(a.exemple):''}
+   ${listen('Écouter le mot',ST.step,it.w)}
+   <div class="slots" id="slots">${it.s.map((c,i)=>`<span class="slot wide ${i<got.length?'f':''} ${i===got.length?'next':''}">${i<got.length?esc(got[i]):''}</span>`).join('')}</div>
+   <div class="tiles">${ST.tmp.tiles.map((t,k)=>`<button class="tile wide" data-k="${k}" ${t.used?'disabled':''}>${esc(t.c)}</button>`).join('')}</div><div id="fb"></div>`;
+  app.querySelectorAll('.tile').forEach(b=>b.onclick=()=>{
+    const t=ST.tmp.tiles[+b.dataset.k];
+    if(t.c===it.s[got.length]){ t.used=true; got.push(t.c); ST.tmp.miss=0;
+      if(got.length===it.s.length){ judge(ST.tmp.err===0,it.w,ST.tmp.err?ST.tmp.err+' erreur(s) avant de réussir':'sans erreur'); render(); fbOk(it.s.join(' + ')+' = '+it.w);
+        setTimeout(()=>{ ST.tmp.tiles=null; nextStep(a.items.length); },1400); }
+      else render();
+    } else { ST.tmp.err++; ST.tmp.miss++; b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+      if(ST.tmp.miss>=2){ const k=ST.tmp.tiles.findIndex(x=>!x.used&&x.c===it.s[got.length]); const h=app.querySelector(`.tile[data-k="${k}"]`); if(h) h.classList.add('hint'); fbKo('Regardez la syllabe qui clignote. Touchez-la.'); }
+      else fbKo('Pas encore. Écoutez le mot.'); }
+  });
+}
+/* ---------- discrimination visuelle ---------- */
+function vSame(a){
+  const it=a.items[ST.step];
+  if(!ST.tmp.list){ ST.tmp.list=it.l.map(w=>({w})); ST.tmp.err=0; }
+  const need=it.l.filter(w=>w===it.w).length;
+  app.innerHTML=`${header(a)}${prog(a.items.length,ST.step)}${consigne(a.consigne)}${ST.step===0?model(a.exemple):''}
+   <div class="temoin">${esc(it.w)}</div>
+   <p class="center muted">${need} mots identiques à trouver</p>
+   <div class="grid" style="--n:2">${ST.tmp.list.map((x,k)=>`<button class="opt word ${x.f?'good':''}" data-k="${k}" ${x.f?'disabled':''}>${esc(x.w)}</button>`).join('')}</div><div id="fb"></div>`;
+  app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    const x=ST.tmp.list[+b.dataset.k];
+    if(x.w===it.w){ x.f=true; b.classList.add('good'); b.disabled=true; const f=$('#fb'); if(f) f.innerHTML='';
+      if(ST.tmp.list.filter(y=>y.f).length===need){ judge(ST.tmp.err===0,'Mot témoin : '+it.w,ST.tmp.err?ST.tmp.err+' erreur(s)':'sans erreur');
+        fbOk('Bravo, vous avez trouvé les '+need+' mots !'); setTimeout(()=>{ ST.tmp.list=null; nextStep(a.items.length); },1400); } }
+    else { ST.tmp.err++; b.classList.remove('shake'); void b.offsetWidth; b.classList.add('bad','shake'); setTimeout(()=>b.classList.remove('bad'),900);
+      fbKo('Ce n\'est pas le même mot. Regardez bien.'); }
+  });
+}
+const VIEWS={date:vDate,syllcut:vSyllCut,syllbuild:vSyllBuild,same:vSame,choice:vChoice,sound:vSound,letters:vLetters,trace:vTrace,order:vOrder,form:vForm,math:vMath,keypad:vKeypad,map:vMap,plan:vPlan,conj:vConj,record:vRecord};
 
 /* ---------- navigation ---------- */
 async function loadWeek(n){
@@ -386,17 +490,22 @@ async function route(){
 let lastView='';
 function render(){
   const view=[ST.screen,ST.week&&ST.week.n,ST.act&&ST.act.id,ST.step].join('|'), same=view===lastView; lastView=view;
-  clearInterval(recInt); if(!same) A.stop();
+  clearInterval(recInt); if(!same){ A.stop(); ST.busy=false; }
   if(ST.screen==='login') vLogin(); else if(ST.screen==='home') vHome(); else if(ST.screen==='week') vWeek();
   else if(ST.screen==='bravo') vBravo(); else VIEWS[ST.act.type](ST.act);
   if(!same) window.scrollTo(0,0); /* même écran (ex. une lettre du prénom) : on ne remonte pas en haut */
   A.prepare([...app.querySelectorAll('[data-key]')].map(b=>[b.dataset.key,b.dataset.text]));
+  if(ST.screen==='act'){ const c=app.querySelector('.consigne .spk');
+    if(c&&c.dataset.key!==ST.lastC){ ST.lastC=c.dataset.key; playKey(c.dataset.key,c.dataset.text,c); } /* la consigne est dite une fois en arrivant */
+    invite(); }
 }
+app.addEventListener('click',e=>{ /* réponse trouvée : on ignore les touchers en trop jusqu'à l'écran suivant */
+  if(ST.busy && !e.target.closest('[data-key],.back,[data-go]')){ e.stopPropagation(); e.preventDefault(); } },true);
 app.addEventListener('click',e=>{
-  const k=e.target.closest('[data-key]'); if(k){ playKey(k.dataset.key,k.dataset.text,k.classList.contains('spk')?k:null); return; }
+  const k=e.target.closest('[data-key]'); if(k){ if(!k.classList.contains('spk')){ k.dataset.heard='1'; k.classList.remove('invite'); } playKey(k.dataset.key,k.dataset.text,k); return; }
   const g=e.target.closest('[data-go]'); if(g){ if(g.dataset.go==='home'){ history.replaceState(null,'',location.pathname); ST.screen='home'; render(); } else { ST.screen=g.dataset.go; render(); } return; }
   const w=e.target.closest('[data-week]'); if(w){ location.hash='semaine-'+w.dataset.week; return; }
-  const c=e.target.closest('[data-act]'); if(c){ ST.act=ST.week.activites.find(a=>a.id===c.dataset.act); ST.step=0; ST.t0=Date.now(); ST.tmp={score:0,total:0,answers:[]}; ST.screen='act'; render(); }
+  const c=e.target.closest('[data-act]'); if(c){ ST.act=ST.week.activites.find(a=>a.id===c.dataset.act); ST.step=0; ST.t0=Date.now(); ST.tmp={score:0,total:0,answers:[]}; ST.lastC=null; ST.screen='act'; render(); }
 });
 window.addEventListener('hashchange',route);
 window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); window._installEvt=e; if(ST.screen==='home') render(); });

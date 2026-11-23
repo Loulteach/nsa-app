@@ -116,3 +116,27 @@ tr.row{cursor:pointer}
 .tabs{display:flex;gap:6px}.tabs button{flex:1;font:600 .9rem var(--f-body);padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
 .tabs button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
 input.plain,select.plain{font:500 1rem var(--f-body);padding:10px 12px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+/* boutons Écouter bien visibles ; ils s'allument après la consigne */
+.btn.ghost[data-key]{background:#fff3c4;border:2px solid #e0b100;color:#111;font-size:1.15rem}
+.btn.ghost[data-key] svg{width:28px;height:28px}
+.btn[data-key].invite{background:#ffd84d;border-color:#b88a00;animation:glow 1.1s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(224,177,0,.7)}50%{box-shadow:0 0 0 10px rgba(224,177,0,0)}}
+@media (prefers-reduced-motion:reduce){.btn[data-key].invite{animation:none}}
+.opt:active,.tile:active,.btn:active,.spk:active,.cut:active{transform:scale(.96)}
+.tile{width:62px;height:68px}
+.tile.wide,.slot.wide{width:auto;min-width:76px;padding:0 10px}
+.slot.wide{height:60px}
+/* dates */
+.datebox{display:flex;align-items:center;justify-content:center;gap:6px;font:700 2.2rem var(--f-body)}
+.dbox{width:52px;height:64px;border:2px dashed var(--line);border-radius:10px;display:grid;place-items:center;background:var(--surface)}
+.dbox.next,.blank.next{border-color:var(--accent);border-style:solid;animation:pulse 1.2s infinite}
+/* syllabes */
+.wordcut{display:flex;justify-content:center;align-items:stretch;flex-wrap:wrap;padding:14px 4px;background:var(--surface2);border-radius:16px}
+.wordcut .lt{font:600 3rem/1.2 var(--f-body);padding:0 2px;color:var(--ink)}
+.cut{width:30px;min-height:72px;border:none;background:transparent;position:relative;cursor:pointer;padding:0}
+.cut::after{content:"";position:absolute;left:13px;top:6px;bottom:6px;width:4px;border-radius:2px;background:repeating-linear-gradient(#b7c0d3 0 6px,transparent 6px 11px)}
+.cut.on::after{background:#e2453c;width:6px;left:12px}
+span.cut{display:inline-block;min-height:auto;width:22px}
+span.cut::after{left:8px}
+/* mot témoin */
+.temoin{font:700 2.6rem var(--f-body);text-align:center;padding:12px;border:3px solid var(--accent);border-radius:16px;background:var(--surface)}

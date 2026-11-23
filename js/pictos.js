@@ -67,6 +67,10 @@ const P={
   parc:`<path d="M6 90 H94" ${K}/><path d="M28 90 V62" stroke="#7a5230" stroke-width="7"/><circle cx="28" cy="48" r="20" fill="#56b36b" ${K}/><path d="M70 90 V68" stroke="#7a5230" stroke-width="6"/><circle cx="70" cy="56" r="15" fill="#7ccf73" ${K}/>`,
   oui:`<circle cx="50" cy="50" r="40" fill="#dff5ea" ${K}/><path d="M30 52 L45 66 L72 36" stroke="#168a5c" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
   non:`<circle cx="50" cy="50" r="40" fill="#fde7e5" ${K}/><path d="M34 34 L66 66 M66 34 L34 66" stroke="#c8433d" stroke-width="9" stroke-linecap="round"/>`,
+  calendrier:`<rect x="12" y="18" width="76" height="70" rx="8" fill="#fff" ${K}/><rect x="12" y="18" width="76" height="20" rx="8" fill="#e2453c" ${K}/><path d="M30 10v16M70 10v16" ${K}/><text x="50" y="76" text-anchor="middle" font-family="Lexend,sans-serif" font-weight="700" font-size="32" fill="#111">12</text>`,
+  ciseaux:`<circle cx="26" cy="72" r="12" fill="#fff" ${K}/><circle cx="26" cy="32" r="12" fill="#fff" ${K}/><path d="M36 66 L88 30 M36 38 L88 74" ${K}/><path d="M60 50h0" ${K}/>`,
+  syllabes:`<rect x="6" y="32" width="40" height="36" rx="8" fill="#dbe6ff" ${K}/><rect x="54" y="32" width="40" height="36" rx="8" fill="#ffe0dc" ${K}/><text x="26" y="58" text-anchor="middle" font-family="Lexend,sans-serif" font-weight="700" font-size="22" fill="#2b62d9">pa</text><text x="74" y="58" text-anchor="middle" font-family="Lexend,sans-serif" font-weight="700" font-size="22" fill="#e2453c">pa</text>`,
+  loupe:`<circle cx="42" cy="42" r="26" fill="#e8f4ff" ${K}/><path d="M61 61 L88 88" stroke="#111" stroke-width="9" stroke-linecap="round"/>`,
   epeler:fig(30,'#3a7bd5')+`<path d="M50 12 H94 V46 H64 L56 56 L58 46 H50 Z" fill="#fff" ${K}/><text x="72" y="35" text-anchor="middle" font-family="Lexend,sans-serif" font-weight="700" font-size="16" fill="#111">A-B-C</text>`,
 };
 const ICO={

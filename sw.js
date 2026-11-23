@@ -1,6 +1,6 @@
 /* Service worker : l'application et les semaines marchent sans Internet. */
-const VERSION='nsa-v11';
-const SHELL=['./','index.html','css/app.css','js/config.js','js/store.js','js/pictos.js','js/content.js','js/audio.js','js/app.js','js/lib/lame.min.js','js/mp3.js',
+const VERSION='nsa-v12';
+const SHELL=['./','index.html','css/app.css','js/config.js','js/store.js','js/pictos.js','js/content.js','js/audio.js','js/touch.js','js/app.js','js/lib/lame.min.js','js/mp3.js',
   'fonts/lexend-latin.woff2','fonts/playwrite-fr.woff2','manifest.webmanifest','icons/icon-192.png','icons/icon-180.png',
   'weeks/index.json','weeks/semaine-1.json','weeks/semaine-2.json'];
 self.addEventListener('install',e=>{ e.waitUntil(caches.open(VERSION).then(async c=>{ await c.addAll(SHELL.concat(['audio/manifest.json']));

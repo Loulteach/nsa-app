@@ -15,6 +15,9 @@ function audioList(week){
   });
   return out;
 }
+const NUM=['zéro','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze','quinze','seize','dix-sept','dix-huit','dix-neuf','vingt','vingt et un','vingt-deux','vingt-trois','vingt-quatre','vingt-cinq','vingt-six','vingt-sept','vingt-huit','vingt-neuf','trente','trente et un'];
+const MOIS=['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const dateText=it=>`le ${it.j===1?'premier':NUM[it.j]} ${MOIS[it.m]}`;
 function itemText(a,it){
   switch(a.type){
     case 'choice': return it.say;
@@ -22,9 +25,11 @@ function itemText(a,it){
     case 'letters': return it.say || null;
     case 'conj': return it.p+(it.glue?'':' ')+it.a+' '+it.b;
     case 'keypad': case 'map': case 'plan': return it.say;
+    case 'date': return dateText(it);
+    case 'syllcut': case 'syllbuild': case 'same': return it.w;
     default: return null;
   }
 }
-root.NSA_CONTENT={audioList,itemText};
-if(typeof module!=='undefined') module.exports={audioList,itemText};
+root.NSA_CONTENT={audioList,itemText,dateText,NUM,MOIS};
+if(typeof module!=='undefined') module.exports={audioList,itemText,dateText,NUM,MOIS};
 })(typeof window!=='undefined'?window:globalThis);
